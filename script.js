@@ -307,7 +307,7 @@ function initRandomButton() {
   });
 }
 
-// ---------- DOWNLOAD ----------
+// ---------- DOWNLOAD (ALWAYS TRANSPARENT EXPORT) ----------
 
 function initDownloadButton() {
   const button = document.getElementById("downloadSvg");
@@ -317,8 +317,10 @@ function initDownloadButton() {
 
 function downloadSVG() {
   const serializer = new XMLSerializer();
-  // Clone SVG as-is; there's no background rect, just paths
   const clone = svg.cloneNode(true);
+
+  // Ensure export has no "background" element – only group/paths.
+  // (We never create a rect, so clone already contains only lines.)
 
   const svgString = serializer.serializeToString(clone);
   const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
