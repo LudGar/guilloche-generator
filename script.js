@@ -14,11 +14,7 @@ const state = {
   repeatCount: 5,
   thickness: 1,
   scale: 100,
-  strokeColor: "#000000",
-  strokeAlpha: 1,
-  bgColor: "#ffffff",
-  bgAlpha: 1,
-  transparentExport: false
+  strokeColor: "#000000"
 };
 
 const svg = document.getElementById("previewSvg");
@@ -49,11 +45,7 @@ const builtInPresets = [
       repeatCount: 18,
       thickness: 2,
       scale: 80,
-      strokeColor: "#004488",
-      strokeAlpha: 1,
-      bgColor: "#ffffff",
-      bgAlpha: 1,
-      transparentExport: false
+      strokeColor: "#004488"
     }
   },
   {
@@ -72,11 +64,7 @@ const builtInPresets = [
       repeatCount: 30,
       thickness: 3,
       scale: 70,
-      strokeColor: "#008800",
-      strokeAlpha: 0.9,
-      bgColor: "#f3f7ff",
-      bgAlpha: 1,
-      transparentExport: false
+      strokeColor: "#008800"
     }
   },
   {
@@ -95,11 +83,7 @@ const builtInPresets = [
       repeatCount: 10,
       thickness: 1,
       scale: 100,
-      strokeColor: "#880000",
-      strokeAlpha: 1,
-      bgColor: "#ffffff",
-      bgAlpha: 1,
-      transparentExport: false
+      strokeColor: "#880000"
     }
   }
 ];
@@ -108,49 +92,12 @@ let customPresets = [];
 
 // ---------- HELPERS ----------
 
-function hexToRgb(hex) {
-  let h = hex.trim();
-  if (h[0] === "#") h = h.slice(1);
-  if (h.length === 3) {
-    h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
-  }
-  if (h.length !== 6) return { r: 0, g: 0, b: 0 };
-  const r = parseInt(h.slice(0, 2), 16) || 0;
-  const g = parseInt(h.slice(2, 4), 16) || 0;
-  const b = parseInt(h.slice(4, 6), 16) || 0;
-  return { r, g, b };
-}
-
-function rgbaFromState(colorKey, alphaKey) {
-  const { r, g, b } = hexToRgb(state[colorKey] || "#000000");
-  let a = Number(state[alphaKey]);
-  if (Number.isNaN(a)) a = 1;
-  a = Math.min(Math.max(a, 0), 1);
-  return `rgba(${r}, ${g}, ${b}, ${a})`;
-}
-
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function randomFloat(min, max) {
-  return min + Math.random() * (max - min);
-}
-
 function randomChoice(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function randomPastel() {
-  const r = randomInt(200, 255);
-  const g = randomInt(200, 255);
-  const b = randomInt(200, 255);
-  return (
-    "#" +
-    [r, g, b]
-      .map(v => v.toString(16).padStart(2, "0"))
-      .join("")
-  );
 }
 
 // ---------- UI INIT ----------
@@ -162,17 +109,13 @@ function updateLabel(id) {
 }
 
 function syncInputsFromState() {
-  const inputs = document.querySelectorAll(
-    'input[type="range"], input[type="color"], input[type="checkbox"]'
-  );
+  const inputs = document.querySelectorAll('input[type="range"], input[type="color"]');
   inputs.forEach(input => {
     const id = input.id;
     const type = input.type;
     if (!state.hasOwnProperty(id)) return;
 
-    if (type === "checkbox") {
-      input.checked = !!state[id];
-    } else {
+    if (type === "color" || type === "range") {
       input.value = state[id];
       updateLabel(id);
     }
@@ -180,43 +123,29 @@ function syncInputsFromState() {
 }
 
 function initControls() {
-  const inputs = document.querySelectorAll(
-    'input[type="range"], input[type="color"], input[type="checkbox"]'
-  );
+  const inputs = document.querySelectorAll('input[type="range"], input[type="color"]');
   inputs.forEach(input => {
     const id = input.id;
     const type = input.type;
 
     if (state.hasOwnProperty(id)) {
-      if (type === "checkbox") {
-        input.checked = !!state[id];
-      } else {
-        input.value = state[id];
-      }
+      input.value = state[id];
     } else {
       if (type === "range") {
         state[id] = Number(input.value);
       } else if (type === "color") {
         state[id] = input.value;
-      } else if (type === "checkbox") {
-        state[id] = input.checked;
       }
     }
-    if (type !== "checkbox") {
-      updateLabel(id);
-    }
+    updateLabel(id);
 
     input.addEventListener("input", () => {
       if (type === "range") {
         state[id] = Number(input.value);
-      } else if (type === "color") {
+      } else {
         state[id] = input.value;
-      } else if (type === "checkbox") {
-        state[id] = input.checked;
       }
-      if (type !== "checkbox") {
-        updateLabel(id);
-      }
+      updateLabel(id);
       render();
     });
   });
@@ -366,12 +295,6 @@ function randomizeState() {
 
   const linePalette = ["#004488", "#880000", "#008800", "#884400", "#553388", "#006666"];
   state.strokeColor = randomChoice(linePalette);
-  state.strokeAlpha = randomFloat(0.4, 1);
-
-  state.bgColor = randomPastel();
-  state.bgAlpha = randomFloat(0.6, 1);
-
-  state.transparentExport = false;
 }
 
 function initRandomButton() {
@@ -394,15 +317,8 @@ function initDownloadButton() {
 
 function downloadSVG() {
   const serializer = new XMLSerializer();
+  // Clone SVG as-is; there's no background rect, just paths
   const clone = svg.cloneNode(true);
-
-  if (state.transparentExport) {
-    // assume first element child is the background rect
-    const first = clone.firstElementChild;
-    if (first && first.tagName.toLowerCase() === "rect") {
-      clone.removeChild(first);
-    }
-  }
 
   const svgString = serializer.serializeToString(clone);
   const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
@@ -457,25 +373,8 @@ function createPathData(stepIndex) {
 }
 
 function render() {
-  const preview = document.querySelector(".preview");
-  const bgCss = rgbaFromState("bgColor", "bgAlpha");
-
-  // Fill whole right side with background color (with alpha)
-  if (preview) {
-    preview.style.background = bgCss;
-  }
-
   // Clear SVG
   while (svg.firstChild) svg.removeChild(svg.firstChild);
-
-  // Background rect inside SVG (also with alpha for on-screen view)
-  const rect = document.createElementNS(svgNS, "rect");
-  rect.setAttribute("x", "0");
-  rect.setAttribute("y", "0");
-  rect.setAttribute("width", "640");
-  rect.setAttribute("height", "640");
-  rect.setAttribute("fill", bgCss);
-  svg.appendChild(rect);
 
   const group = document.createElementNS(svgNS, "g");
   group.setAttribute("transform", "translate(320 320)");
@@ -483,13 +382,13 @@ function render() {
 
   const repeatCount = state.repeatCount;
   const maxThickness = state.thickness;
-  const strokeCss = rgbaFromState("strokeColor", "strokeAlpha");
+  const strokeColor = state.strokeColor || "#000000";
 
   for (let step = 0; step <= repeatCount; step++) {
     const pathElem = document.createElementNS(svgNS, "path");
     pathElem.setAttribute("d", createPathData(step));
     pathElem.setAttribute("fill", "none");
-    pathElem.setAttribute("stroke", strokeCss);
+    pathElem.setAttribute("stroke", strokeColor);
 
     let lineThickness = 1;
     if (maxThickness > 0 && repeatCount > 0) {
