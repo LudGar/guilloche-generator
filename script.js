@@ -15,7 +15,9 @@ const state = {
   thickness: 1,
   scale: 100,
   strokeColor: "#000000",
-  bgColor: "#ffffff"
+  strokeAlpha: 1,
+  bgColor: "#ffffff",
+  bgAlpha: 1
 };
 
 const svg = document.getElementById("previewSvg");
@@ -47,7 +49,9 @@ const builtInPresets = [
       thickness: 2,
       scale: 80,
       strokeColor: "#004488",
-      bgColor: "#ffffff"
+      strokeAlpha: 1,
+      bgColor: "#ffffff",
+      bgAlpha: 1
     }
   },
   {
@@ -67,7 +71,9 @@ const builtInPresets = [
       thickness: 3,
       scale: 70,
       strokeColor: "#008800",
-      bgColor: "#f3f7ff"
+      strokeAlpha: 0.9,
+      bgColor: "#f3f7ff",
+      bgAlpha: 1
     }
   },
   {
@@ -87,12 +93,38 @@ const builtInPresets = [
       thickness: 1,
       scale: 100,
       strokeColor: "#880000",
-      bgColor: "#ffffff"
+      strokeAlpha: 1,
+      bgColor: "#ffffff",
+      bgAlpha: 1
     }
   }
 ];
 
 let customPresets = [];
+
+// ---------- HELPERS ----------
+
+function hexToRgb(hex) {
+  let h = hex.trim();
+  if (h[0] === "#") h = h.slice(1);
+  if (h.length === 3) {
+    h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  }
+  if (h.length !== 6) return { r: 0, g: 0, b: 0 };
+  const r = parseInt(h.slice(0, 2), 16) || 0;
+  const g = parseInt(h.slice(2, 4), 16) || 0;
+  const b = parseInt(h.slice(4, 6), 16) || 0;
+  return { r, g, b };
+}
+
+function rgbaFromState(colorKey, alphaKey) {
+  const { r, g, b } = hexToRgb(state[colorKey] || "#000000");
+  let a = Number(state[alphaKey]);
+  if (Number.isNaN(a)) a = 1;
+  if (a < 0) a = 0;
+  if (a > 1) a = 1;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
 
 // ---------- UI INIT ----------
 
@@ -112,7 +144,7 @@ function initControls() {
       input.value = state[id];
     } else {
       if (type === "range") {
-        state[id] = parseInt(input.value, 10);
+        state[id] = Number(input.value);
       } else {
         state[id] = input.value;
       }
@@ -121,7 +153,7 @@ function initControls() {
 
     input.addEventListener("input", () => {
       if (type === "range") {
-        state[id] = parseInt(input.value, 10);
+        state[id] = Number(input.value);
       } else {
         state[id] = input.value;
       }
@@ -188,7 +220,6 @@ function repopulatePresetSelect() {
   });
   select.appendChild(customGroup);
 
-  // default selection
   select.value = "built:0";
 }
 
@@ -196,7 +227,7 @@ function getSelectedPreset() {
   const select = document.getElementById("presetSelect");
   if (!select || !select.value) return null;
   const [kind, idxStr] = select.value.split(":");
-  const idx = parseInt(idxStr, 10);
+  const idx = Number(idxStr);
   if (kind === "built") {
     return builtInPresets[idx] || null;
   }
@@ -211,7 +242,6 @@ function applyPreset(preset) {
   const newState = JSON.parse(JSON.stringify(preset.state));
   Object.assign(state, newState);
 
-  // Sync all UI inputs with updated state
   const inputs = document.querySelectorAll('input[type="range"], input[type="color"]');
   inputs.forEach(input => {
     const id = input.id;
@@ -256,7 +286,7 @@ function initPresetsUI() {
       const select = document.getElementById("presetSelect");
       if (!select || !select.value) return;
       const [kind, idxStr] = select.value.split(":");
-      const idx = parseInt(idxStr, 10);
+      const idx = Number(idxStr);
 
       if (kind === "built") {
         alert("Built-in presets cannot be deleted.");
@@ -337,16 +367,24 @@ function createPathData(stepIndex) {
 }
 
 function render() {
+  const preview = document.querySelector(".preview");
+  const bgCss = rgbaFromState("bgColor", "bgAlpha");
+
+  // Fill whole right side with background color (with alpha)
+  if (preview) {
+    preview.style.background = bgCss;
+  }
+
   // Clear SVG
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
-  // Background
+  // Background rect inside SVG (also with alpha)
   const rect = document.createElementNS(svgNS, "rect");
   rect.setAttribute("x", "0");
   rect.setAttribute("y", "0");
   rect.setAttribute("width", "640");
   rect.setAttribute("height", "640");
-  rect.setAttribute("fill", state.bgColor || "#ffffff");
+  rect.setAttribute("fill", bgCss);
   svg.appendChild(rect);
 
   const group = document.createElementNS(svgNS, "g");
@@ -355,13 +393,13 @@ function render() {
 
   const repeatCount = state.repeatCount;
   const maxThickness = state.thickness;
-  const strokeColor = state.strokeColor || "#000000";
+  const strokeCss = rgbaFromState("strokeColor", "strokeAlpha");
 
   for (let step = 0; step <= repeatCount; step++) {
     const pathElem = document.createElementNS(svgNS, "path");
     pathElem.setAttribute("d", createPathData(step));
     pathElem.setAttribute("fill", "none");
-    pathElem.setAttribute("stroke", strokeColor);
+    pathElem.setAttribute("stroke", strokeCss);
 
     let lineThickness = 1;
     if (maxThickness > 0 && repeatCount > 0) {
@@ -371,38 +409,6 @@ function render() {
 
     group.appendChild(pathElem);
   }
-
-  updatePixelPreview();
-}
-
-// ---------- PIXEL PREVIEW ----------
-
-function updatePixelPreview() {
-  const canvas = document.getElementById("pixelPreview");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  const serializer = new XMLSerializer();
-
-  // Clone SVG to ensure clean serialization
-  const clone = svg.cloneNode(true);
-  const svgString = serializer.serializeToString(clone);
-
-  const svgBase64 = btoa(unescape(encodeURIComponent(svgString)));
-  const img = new Image();
-  img.onload = () => {
-    const w = img.width;
-    const h = img.height;
-
-    // Central square region for that "security feature" feel
-    const size = Math.min(w, h) * 0.5;
-    const sx = (w - size) / 2;
-    const sy = (h - size) / 2;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.imageSmoothingEnabled = false; // crunchy pixels
-    ctx.drawImage(img, sx, sy, size, size, 0, 0, canvas.width, canvas.height);
-  };
-  img.src = "data:image/svg+xml;base64," + svgBase64;
 }
 
 // ---------- BOOT ----------
