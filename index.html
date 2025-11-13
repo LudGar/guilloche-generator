@@ -132,11 +132,27 @@
     </div>
 
     <div class="slider-group">
+      <label class="slider-label" for="strokeAlpha">
+        <span>Line Alpha</span>
+        <span class="value" data-for="strokeAlpha"></span>
+      </label>
+      <input type="range" id="strokeAlpha" min="0" max="1" step="0.01" value="1">
+    </div>
+
+    <div class="slider-group">
       <label class="slider-label" for="bgColor">
         <span>Background</span>
         <span class="value" data-for="bgColor"></span>
       </label>
       <input type="color" id="bgColor" value="#ffffff">
+    </div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="bgAlpha">
+        <span>Background Alpha</span>
+        <span class="value" data-for="bgAlpha"></span>
+      </label>
+      <input type="range" id="bgAlpha" min="0" max="1" step="0.01" value="1">
     </div>
 
     <div class="group-title">Presets</div>
@@ -154,17 +170,14 @@
     </div>
 
     <div class="footer-hint">
-      Tip: Try tiny angle changes (±1) to find intricate patterns.
+      Tip: Try tiny angle changes (±1) to find intricate patterns.  
+      Background color + alpha now fill the whole preview.
     </div>
   </div>
 
   <div class="preview">
     <div class="main-svg-wrapper">
       <svg id="previewSvg" width="640" height="640" viewBox="0 0 640 640"></svg>
-    </div>
-    <div class="pixel-preview-panel">
-      <canvas id="pixelPreview" width="200" height="200"></canvas>
-      <div class="pixel-caption">Pixel preview (center zoom)</div>
     </div>
   </div>
 
