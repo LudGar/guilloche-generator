@@ -52,7 +52,7 @@ h1 {
 .slider-label span.value {
   color: #ffd96b;
   margin-left: 8px;
-  min-width: 60px;
+  min-width: 70px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -138,8 +138,8 @@ button:active {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at top, #252538, #050509);
-  gap: 16px;
+  /* background color now overridden by JS to match bgColor+alpha */
+  background: #050509;
 }
 
 .main-svg-wrapper {
@@ -147,30 +147,8 @@ button:active {
 }
 
 svg {
-  background: #fff;
+  /* SVG background is transparent; we draw a rect inside with bgColor+alpha */
+  background: transparent;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
   border-radius: 6px;
-}
-
-/* PIXEL PREVIEW */
-
-.pixel-preview-panel {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-#pixelPreview {
-  border-radius: 4px;
-  border: 1px solid #444;
-  background: #000;
-}
-
-.pixel-caption {
-  font-size: 11px;
-  color: #bbb;
-  text-align: center;
-  max-width: 220px;
 }
