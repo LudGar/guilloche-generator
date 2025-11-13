@@ -47,7 +47,6 @@
     </div>
 
     <div class="group-title">Scales</div>
-
     <div class="slider-group">
       <label class="slider-label" for="scaleA">
         <span>Scale A</span>
@@ -81,7 +80,6 @@
     </div>
 
     <div class="group-title">Offsets &amp; Repeats</div>
-
     <div class="slider-group">
       <label class="slider-label" for="offset">
         <span>Offset</span>
@@ -107,7 +105,6 @@
     </div>
 
     <div class="group-title">Stroke &amp; Scale</div>
-
     <div class="slider-group">
       <label class="slider-label" for="thickness">
         <span>Line Thickness</span>
@@ -123,10 +120,52 @@
       </label>
       <input type="range" id="scale" min="0" max="400" value="100">
     </div>
+
+    <div class="group-title">Colors &amp; Export</div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="strokeColor">
+        <span>Line Color</span>
+        <span class="value" data-for="strokeColor"></span>
+      </label>
+      <input type="color" id="strokeColor" value="#000000">
+    </div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="bgColor">
+        <span>Background</span>
+        <span class="value" data-for="bgColor"></span>
+      </label>
+      <input type="color" id="bgColor" value="#ffffff">
+    </div>
+
+    <div class="group-title">Presets</div>
+    <div class="preset-row">
+      <select id="presetSelect"></select>
+    </div>
+    <div class="preset-buttons">
+      <button id="applyPreset">Load</button>
+      <button id="savePreset">Save as…</button>
+      <button id="deletePreset">Delete</button>
+    </div>
+
+    <div class="export-buttons">
+      <button id="downloadSvg">Download SVG</button>
+    </div>
+
+    <div class="footer-hint">
+      Tip: Try tiny angle changes (±1) to find intricate patterns.
+    </div>
   </div>
 
   <div class="preview">
-    <svg id="previewSvg" width="640" height="640" viewBox="0 0 640 640"></svg>
+    <div class="main-svg-wrapper">
+      <svg id="previewSvg" width="640" height="640" viewBox="0 0 640 640"></svg>
+    </div>
+    <div class="pixel-preview-panel">
+      <canvas id="pixelPreview" width="200" height="200"></canvas>
+      <div class="pixel-caption">Pixel preview (center zoom)</div>
+    </div>
   </div>
 
   <script src="script.js"></script>
