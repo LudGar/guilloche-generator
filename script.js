@@ -17,7 +17,8 @@ const state = {
   strokeColor: "#000000",
   strokeAlpha: 1,
   bgColor: "#ffffff",
-  bgAlpha: 1
+  bgAlpha: 1,
+  transparentExport: false
 };
 
 const svg = document.getElementById("previewSvg");
@@ -51,7 +52,8 @@ const builtInPresets = [
       strokeColor: "#004488",
       strokeAlpha: 1,
       bgColor: "#ffffff",
-      bgAlpha: 1
+      bgAlpha: 1,
+      transparentExport: false
     }
   },
   {
@@ -73,7 +75,8 @@ const builtInPresets = [
       strokeColor: "#008800",
       strokeAlpha: 0.9,
       bgColor: "#f3f7ff",
-      bgAlpha: 1
+      bgAlpha: 1,
+      transparentExport: false
     }
   },
   {
@@ -95,7 +98,8 @@ const builtInPresets = [
       strokeColor: "#880000",
       strokeAlpha: 1,
       bgColor: "#ffffff",
-      bgAlpha: 1
+      bgAlpha: 1,
+      transparentExport: false
     }
   }
 ];
@@ -121,9 +125,32 @@ function rgbaFromState(colorKey, alphaKey) {
   const { r, g, b } = hexToRgb(state[colorKey] || "#000000");
   let a = Number(state[alphaKey]);
   if (Number.isNaN(a)) a = 1;
-  if (a < 0) a = 0;
-  if (a > 1) a = 1;
+  a = Math.min(Math.max(a, 0), 1);
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomFloat(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function randomChoice(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function randomPastel() {
+  const r = randomInt(200, 255);
+  const g = randomInt(200, 255);
+  const b = randomInt(200, 255);
+  return (
+    "#" +
+    [r, g, b]
+      .map(v => v.toString(16).padStart(2, "0"))
+      .join("")
+  );
 }
 
 // ---------- UI INIT ----------
@@ -134,36 +161,69 @@ function updateLabel(id) {
   span.textContent = state[id];
 }
 
+function syncInputsFromState() {
+  const inputs = document.querySelectorAll(
+    'input[type="range"], input[type="color"], input[type="checkbox"]'
+  );
+  inputs.forEach(input => {
+    const id = input.id;
+    const type = input.type;
+    if (!state.hasOwnProperty(id)) return;
+
+    if (type === "checkbox") {
+      input.checked = !!state[id];
+    } else {
+      input.value = state[id];
+      updateLabel(id);
+    }
+  });
+}
+
 function initControls() {
-  const inputs = document.querySelectorAll('input[type="range"], input[type="color"]');
+  const inputs = document.querySelectorAll(
+    'input[type="range"], input[type="color"], input[type="checkbox"]'
+  );
   inputs.forEach(input => {
     const id = input.id;
     const type = input.type;
 
     if (state.hasOwnProperty(id)) {
-      input.value = state[id];
+      if (type === "checkbox") {
+        input.checked = !!state[id];
+      } else {
+        input.value = state[id];
+      }
     } else {
       if (type === "range") {
         state[id] = Number(input.value);
-      } else {
+      } else if (type === "color") {
         state[id] = input.value;
+      } else if (type === "checkbox") {
+        state[id] = input.checked;
       }
     }
-    updateLabel(id);
+    if (type !== "checkbox") {
+      updateLabel(id);
+    }
 
     input.addEventListener("input", () => {
       if (type === "range") {
         state[id] = Number(input.value);
-      } else {
+      } else if (type === "color") {
         state[id] = input.value;
+      } else if (type === "checkbox") {
+        state[id] = input.checked;
       }
-      updateLabel(id);
+      if (type !== "checkbox") {
+        updateLabel(id);
+      }
       render();
     });
   });
 
   initPresetsUI();
   initDownloadButton();
+  initRandomButton();
 }
 
 // ---------- PRESET HANDLING ----------
@@ -176,11 +236,7 @@ function loadCustomPresets() {
       return;
     }
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      customPresets = parsed;
-    } else {
-      customPresets = [];
-    }
+    customPresets = Array.isArray(parsed) ? parsed : [];
   } catch (e) {
     console.warn("Failed to parse custom presets:", e);
     customPresets = [];
@@ -228,12 +284,8 @@ function getSelectedPreset() {
   if (!select || !select.value) return null;
   const [kind, idxStr] = select.value.split(":");
   const idx = Number(idxStr);
-  if (kind === "built") {
-    return builtInPresets[idx] || null;
-  }
-  if (kind === "custom") {
-    return customPresets[idx] || null;
-  }
+  if (kind === "built") return builtInPresets[idx] || null;
+  if (kind === "custom") return customPresets[idx] || null;
   return null;
 }
 
@@ -241,16 +293,7 @@ function applyPreset(preset) {
   if (!preset || !preset.state) return;
   const newState = JSON.parse(JSON.stringify(preset.state));
   Object.assign(state, newState);
-
-  const inputs = document.querySelectorAll('input[type="range"], input[type="color"]');
-  inputs.forEach(input => {
-    const id = input.id;
-    if (state.hasOwnProperty(id)) {
-      input.value = state[id];
-      updateLabel(id);
-    }
-  });
-
+  syncInputsFromState();
   render();
 }
 
@@ -273,7 +316,6 @@ function initPresetsUI() {
     saveBtn.addEventListener("click", () => {
       const name = prompt("Preset name:");
       if (!name) return;
-
       const stateCopy = JSON.parse(JSON.stringify(state));
       customPresets.push({ name, state: stateCopy });
       saveCustomPresets();
@@ -292,16 +334,54 @@ function initPresetsUI() {
         alert("Built-in presets cannot be deleted.");
         return;
       }
-      if (kind === "custom") {
-        if (idx >= 0 && idx < customPresets.length) {
-          const [removed] = customPresets.splice(idx, 1);
-          saveCustomPresets();
-          repopulatePresetSelect();
-          alert(`Deleted preset: ${removed.name}`);
-        }
+      if (kind === "custom" && idx >= 0 && idx < customPresets.length) {
+        const [removed] = customPresets.splice(idx, 1);
+        saveCustomPresets();
+        repopulatePresetSelect();
+        alert(`Deleted preset: ${removed.name}`);
       }
     });
   }
+}
+
+// ---------- RANDOMIZE ----------
+
+function randomizeState() {
+  state.angleA = randomInt(-24, 24);
+  state.angleB = randomInt(-24, 24);
+  state.angleC = randomInt(-24, 24);
+  state.angleD = randomInt(-10, 10);
+
+  state.scaleA = randomInt(60, 200);
+  state.scaleB = randomInt(20, 120);
+  state.scaleC = randomInt(20, 160);
+  state.scaleD = randomInt(0, 80);
+
+  state.offset = randomInt(-30, 30);
+  state.repeatOffset = randomInt(0, 360);
+  state.repeatCount = randomInt(5, 35);
+
+  state.thickness = randomInt(1, 4);
+  state.scale = randomInt(60, 120);
+
+  const linePalette = ["#004488", "#880000", "#008800", "#884400", "#553388", "#006666"];
+  state.strokeColor = randomChoice(linePalette);
+  state.strokeAlpha = randomFloat(0.4, 1);
+
+  state.bgColor = randomPastel();
+  state.bgAlpha = randomFloat(0.6, 1);
+
+  state.transparentExport = false;
+}
+
+function initRandomButton() {
+  const btn = document.getElementById("randomize");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    randomizeState();
+    syncInputsFromState();
+    render();
+  });
 }
 
 // ---------- DOWNLOAD ----------
@@ -314,7 +394,17 @@ function initDownloadButton() {
 
 function downloadSVG() {
   const serializer = new XMLSerializer();
-  const svgString = serializer.serializeToString(svg);
+  const clone = svg.cloneNode(true);
+
+  if (state.transparentExport) {
+    // assume first element child is the background rect
+    const first = clone.firstElementChild;
+    if (first && first.tagName.toLowerCase() === "rect") {
+      clone.removeChild(first);
+    }
+  }
+
+  const svgString = serializer.serializeToString(clone);
   const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
 
@@ -378,7 +468,7 @@ function render() {
   // Clear SVG
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
-  // Background rect inside SVG (also with alpha)
+  // Background rect inside SVG (also with alpha for on-screen view)
   const rect = document.createElementNS(svgNS, "rect");
   rect.setAttribute("x", "0");
   rect.setAttribute("y", "0");
