@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Spirograph / Guilloche Generator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="controls">
+    <h1>Guilloche Generator</h1>
+    <div class="subtitle">
+      Inspired by the timestretch Spirograph Guilloche tool.<br>
+      Tweak sliders &amp; watch the pattern update live.
+    </div>
+
+    <div class="group-title">Angles</div>
+    <div class="slider-group">
+      <label class="slider-label" for="angleA">
+        <span>Angle A</span>
+        <span class="value" data-for="angleA"></span>
+      </label>
+      <input type="range" id="angleA" min="-72" max="72" value="-8">
+    </div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="angleB">
+        <span>Angle B</span>
+        <span class="value" data-for="angleB"></span>
+      </label>
+      <input type="range" id="angleB" min="-72" max="72" value="17">
+    </div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="angleC">
+        <span>Angle C</span>
+        <span class="value" data-for="angleC"></span>
+      </label>
+      <input type="range" id="angleC" min="-72" max="72" value="7">
+    </div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="angleD">
+        <span>Angle D</span>
+        <span class="value" data-for="angleD"></span>
+      </label>
+      <input type="range" id="angleD" min="-72" max="72" value="0">
+    </div>
+
+    <div class="group-title">Scales</div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="scaleA">
+        <span>Scale A</span>
+        <span class="value" data-for="scaleA"></span>
+      </label>
+      <input type="range" id="scaleA" min="-360" max="360" value="82">
+    </div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="scaleB">
+        <span>Scale B</span>
+        <span class="value" data-for="scaleB"></span>
+      </label>
+      <input type="range" id="scaleB" min="-360" max="360" value="41">
+    </div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="scaleC">
+        <span>Scale C</span>
+        <span class="value" data-for="scaleC"></span>
+      </label>
+      <input type="range" id="scaleC" min="-360" max="360" value="144">
+    </div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="scaleD">
+        <span>Scale D</span>
+        <span class="value" data-for="scaleD"></span>
+      </label>
+      <input type="range" id="scaleD" min="-360" max="360" value="0">
+    </div>
+
+    <div class="group-title">Offsets &amp; Repeats</div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="offset">
+        <span>Offset</span>
+        <span class="value" data-for="offset"></span>
+      </label>
+      <input type="range" id="offset" min="-360" max="360" value="0">
+    </div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="repeatOffset">
+        <span>Repeat Offset</span>
+        <span class="value" data-for="repeatOffset"></span>
+      </label>
+      <input type="range" id="repeatOffset" min="-720" max="720" value="45">
+    </div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="repeatCount">
+        <span>Repeat Count</span>
+        <span class="value" data-for="repeatCount"></span>
+      </label>
+      <input type="range" id="repeatCount" min="0" max="50" value="5">
+    </div>
+
+    <div class="group-title">Stroke &amp; Scale</div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="thickness">
+        <span>Line Thickness</span>
+        <span class="value" data-for="thickness"></span>
+      </label>
+      <input type="range" id="thickness" min="0" max="10" value="1">
+    </div>
+
+    <div class="slider-group">
+      <label class="slider-label" for="scale">
+        <span>Global Scale</span>
+        <span class="value" data-for="scale"></span>
+      </label>
+      <input type="range" id="scale" min="0" max="400" value="100">
+    </div>
+  </div>
+
+  <div class="preview">
+    <svg id="previewSvg" width="640" height="640" viewBox="0 0 640 640"></svg>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
