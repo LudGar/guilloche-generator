@@ -14,11 +14,115 @@ const state = {
   repeatCount: 5,
   thickness: 1,
   scale: 100,
-  strokeColor: "#000000"
+  strokeColor: "#ffffff" // default bright for dark background
 };
 
 const svg = document.getElementById("previewSvg");
 const svgNS = "http://www.w3.org/2000/svg";
+
+// ---------- VIEWBOX / PANNING / ZOOM ----------
+
+let viewBox = { x: 0, y: 0, w: 640, h: 640 };
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
+
+// zoom limits (world units)
+const MIN_VIEWBOX_SIZE = 80;   // max zoom-in
+const MAX_VIEWBOX_SIZE = 5000; // max zoom-out
+const ZOOM_FACTOR = 1.1;       // wheel zoom speed
+
+function applyViewBox() {
+  svg.setAttribute("viewBox", `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+}
+
+function initPanning() {
+  svg.addEventListener("mousedown", (e) => {
+    // Only left mouse button
+    if (e.button !== 0) return;
+    isPanning = true;
+    panStart.x = e.clientX;
+    panStart.y = e.clientY;
+    svg.style.cursor = "grabbing";
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!isPanning) return;
+
+    const dxPx = e.clientX - panStart.x;
+    const dyPx = e.clientY - panStart.y;
+
+    const rect = svg.getBoundingClientRect();
+    const scaleX = viewBox.w / rect.width;
+    const scaleY = viewBox.h / rect.height;
+
+    viewBox.x -= dxPx * scaleX;
+    viewBox.y -= dyPx * scaleY;
+
+    panStart.x = e.clientX;
+    panStart.y = e.clientY;
+
+    applyViewBox();
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (!isPanning) return;
+    isPanning = false;
+    svg.style.cursor = "grab";
+  });
+
+  window.addEventListener("mouseleave", () => {
+    if (!isPanning) return;
+    isPanning = false;
+    svg.style.cursor = "grab";
+  });
+}
+
+function initZoom() {
+  svg.addEventListener("wheel", (e) => {
+    e.preventDefault();
+
+    const rect = svg.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const relX = mouseX / rect.width;
+    const relY = mouseY / rect.height;
+
+    const worldX = viewBox.x + relX * viewBox.w;
+    const worldY = viewBox.y + relY * viewBox.h;
+
+    // Determine zoom direction
+    const zoomIn = e.deltaY < 0;
+    let factor = zoomIn ? 1 / ZOOM_FACTOR : ZOOM_FACTOR;
+
+    let newW = viewBox.w * factor;
+    let newH = viewBox.h * factor;
+
+    // Clamp zoom so we don't go too far
+    const size = Math.max(newW, newH);
+    if (size < MIN_VIEWBOX_SIZE) {
+      const ratio = MIN_VIEWBOX_SIZE / size;
+      newW *= ratio;
+      newH *= ratio;
+    } else if (size > MAX_VIEWBOX_SIZE) {
+      const ratio = MAX_VIEWBOX_SIZE / size;
+      newW *= ratio;
+      newH *= ratio;
+    }
+
+    // Recompute factor after clamping for precise alignment
+    const actualFactor = newW / viewBox.w;
+
+    viewBox.w = newW;
+    viewBox.h = newH;
+
+    // Keep the point under the cursor fixed
+    viewBox.x = worldX - relX * viewBox.w;
+    viewBox.y = worldY - relY * viewBox.h;
+
+    applyViewBox();
+  }, { passive: false });
+}
 
 // ---------- PRESETS ----------
 
@@ -45,7 +149,7 @@ const builtInPresets = [
       repeatCount: 18,
       thickness: 2,
       scale: 80,
-      strokeColor: "#004488"
+      strokeColor: "#99ddff"
     }
   },
   {
@@ -64,7 +168,7 @@ const builtInPresets = [
       repeatCount: 30,
       thickness: 3,
       scale: 70,
-      strokeColor: "#008800"
+      strokeColor: "#88ff88"
     }
   },
   {
@@ -83,7 +187,7 @@ const builtInPresets = [
       repeatCount: 10,
       thickness: 1,
       scale: 100,
-      strokeColor: "#880000"
+      strokeColor: "#ff8888"
     }
   }
 ];
@@ -153,6 +257,8 @@ function initControls() {
   initPresetsUI();
   initDownloadButton();
   initRandomButton();
+  initPanning();
+  initZoom();
 }
 
 // ---------- PRESET HANDLING ----------
@@ -223,6 +329,11 @@ function applyPreset(preset) {
   const newState = JSON.parse(JSON.stringify(preset.state));
   Object.assign(state, newState);
   syncInputsFromState();
+
+  // Reset viewBox when loading a preset so it recenters & resets zoom
+  viewBox = { x: 0, y: 0, w: 640, h: 640 };
+  applyViewBox();
+
   render();
 }
 
@@ -293,8 +404,12 @@ function randomizeState() {
   state.thickness = randomInt(1, 4);
   state.scale = randomInt(60, 120);
 
-  const linePalette = ["#004488", "#880000", "#008800", "#884400", "#553388", "#006666"];
+  const linePalette = ["#99ddff", "#ff8888", "#88ff88", "#ffc966", "#ddb3ff", "#66ffff"];
   state.strokeColor = randomChoice(linePalette);
+
+  // Reset viewBox when randomizing (center & reset zoom)
+  viewBox = { x: 0, y: 0, w: 640, h: 640 };
+  applyViewBox();
 }
 
 function initRandomButton() {
@@ -307,7 +422,7 @@ function initRandomButton() {
   });
 }
 
-// ---------- DOWNLOAD (ALWAYS TRANSPARENT EXPORT) ----------
+// ---------- DOWNLOAD (TIGHT BOUNDING BOX, TRANSPARENT BG) ----------
 
 function initDownloadButton() {
   const button = document.getElementById("downloadSvg");
@@ -317,10 +432,28 @@ function initDownloadButton() {
 
 function downloadSVG() {
   const serializer = new XMLSerializer();
-  const clone = svg.cloneNode(true);
 
-  // Ensure export has no "background" element – only group/paths.
-  // (We never create a rect, so clone already contains only lines.)
+  const patternGroup = svg.querySelector("#patternGroup");
+  let clone = svg.cloneNode(true);
+
+  if (patternGroup) {
+    const bbox = patternGroup.getBBox();
+    const maxThickness = Math.max(state.thickness, 1);
+
+    const minX = bbox.x - maxThickness;
+    const minY = bbox.y - maxThickness;
+    const maxX = bbox.x + bbox.width + maxThickness;
+    const maxY = bbox.y + bbox.height + maxThickness;
+
+    const vbX = minX;
+    const vbY = minY;
+    const vbW = maxX - minX;
+    const vbH = maxY - minY;
+
+    clone.setAttribute("viewBox", `${vbX} ${vbY} ${vbW} ${vbH}`);
+    clone.removeAttribute("width");
+    clone.removeAttribute("height");
+  }
 
   const svgString = serializer.serializeToString(clone);
   const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
@@ -375,16 +508,17 @@ function createPathData(stepIndex) {
 }
 
 function render() {
-  // Clear SVG
+  // Clear SVG (keep current viewBox for pan/zoom)
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
   const group = document.createElementNS(svgNS, "g");
+  group.setAttribute("id", "patternGroup");
   group.setAttribute("transform", "translate(320 320)");
   svg.appendChild(group);
 
   const repeatCount = state.repeatCount;
   const maxThickness = state.thickness;
-  const strokeColor = state.strokeColor || "#000000";
+  const strokeColor = state.strokeColor || "#ffffff";
 
   for (let step = 0; step <= repeatCount; step++) {
     const pathElem = document.createElementNS(svgNS, "path");
@@ -404,5 +538,6 @@ function render() {
 
 // ---------- BOOT ----------
 
+applyViewBox();
 initControls();
 render();
