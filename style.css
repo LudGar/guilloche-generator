@@ -143,14 +143,15 @@ button:active {
 
 .main-svg-wrapper {
   flex: 1;
-  /* fill available height/width on the right side */
   height: 100%;
 }
 
+/* Dark "card" for the drawing */
 svg {
   width: 100%;
   height: 100%;
-  background: transparent;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.4);
+  background: #0f0f14; /* dark tone instead of white */
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
   border-radius: 6px;
+  cursor: grab; /* hint that you can pan */
 }
