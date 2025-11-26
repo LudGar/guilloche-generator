@@ -104,21 +104,14 @@
       <input type="range" id="repeatCount" min="0" max="50" value="5">
     </div>
 
-    <div class="group-title">Stroke &amp; Scale</div>
+    <div class="group-title">Stroke</div>
     <div class="slider-group">
       <label class="slider-label" for="thickness">
         <span>Line Thickness</span>
         <span class="value" data-for="thickness"></span>
       </label>
-      <input type="range" id="thickness" min="0" max="10" value="1">
-    </div>
-
-    <div class="slider-group">
-      <label class="slider-label" for="scale">
-        <span>Global Scale</span>
-        <span class="value" data-for="scale"></span>
-      </label>
-      <input type="range" id="scale" min="0" max="400" value="100">
+      <!-- updated range: 1–3 -->
+      <input type="range" id="thickness" min="1" max="3" value="1" step="1">
     </div>
 
     <div class="group-title">Line Color</div>
@@ -148,8 +141,8 @@
     </div>
 
     <div class="footer-hint">
-      Preview is pannable (drag with mouse).<br>
-      Exported SVG is tight to the drawing and has no background.
+      Drag to pan, scroll to zoom.<br>
+      Export is tight to the drawing, no background.
     </div>
   </div>
 
