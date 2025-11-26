@@ -12,8 +12,7 @@ const state = {
   offset: 0,
   repeatOffset: 45,
   repeatCount: 5,
-  thickness: 1,
-  scale: 100,
+  thickness: 1,         // now 1–3
   strokeColor: "#ffffff" // default bright for dark background
 };
 
@@ -26,10 +25,9 @@ let viewBox = { x: 0, y: 0, w: 640, h: 640 };
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
 
-// zoom limits (world units)
-const MIN_VIEWBOX_SIZE = 80;   // max zoom-in
-const MAX_VIEWBOX_SIZE = 5000; // max zoom-out
-const ZOOM_FACTOR = 1.1;       // wheel zoom speed
+const MIN_VIEWBOX_SIZE = 80;
+const MAX_VIEWBOX_SIZE = 5000;
+const ZOOM_FACTOR = 1.1;
 
 function applyViewBox() {
   svg.setAttribute("viewBox", `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
@@ -37,7 +35,6 @@ function applyViewBox() {
 
 function initPanning() {
   svg.addEventListener("mousedown", (e) => {
-    // Only left mouse button
     if (e.button !== 0) return;
     isPanning = true;
     panStart.x = e.clientX;
@@ -78,50 +75,48 @@ function initPanning() {
 }
 
 function initZoom() {
-  svg.addEventListener("wheel", (e) => {
-    e.preventDefault();
+  svg.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
 
-    const rect = svg.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+      const rect = svg.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
 
-    const relX = mouseX / rect.width;
-    const relY = mouseY / rect.height;
+      const relX = mouseX / rect.width;
+      const relY = mouseY / rect.height;
 
-    const worldX = viewBox.x + relX * viewBox.w;
-    const worldY = viewBox.y + relY * viewBox.h;
+      const worldX = viewBox.x + relX * viewBox.w;
+      const worldY = viewBox.y + relY * viewBox.h;
 
-    // Determine zoom direction
-    const zoomIn = e.deltaY < 0;
-    let factor = zoomIn ? 1 / ZOOM_FACTOR : ZOOM_FACTOR;
+      const zoomIn = e.deltaY < 0;
+      let factor = zoomIn ? 1 / ZOOM_FACTOR : ZOOM_FACTOR;
 
-    let newW = viewBox.w * factor;
-    let newH = viewBox.h * factor;
+      let newW = viewBox.w * factor;
+      let newH = viewBox.h * factor;
 
-    // Clamp zoom so we don't go too far
-    const size = Math.max(newW, newH);
-    if (size < MIN_VIEWBOX_SIZE) {
-      const ratio = MIN_VIEWBOX_SIZE / size;
-      newW *= ratio;
-      newH *= ratio;
-    } else if (size > MAX_VIEWBOX_SIZE) {
-      const ratio = MAX_VIEWBOX_SIZE / size;
-      newW *= ratio;
-      newH *= ratio;
-    }
+      const size = Math.max(newW, newH);
+      if (size < MIN_VIEWBOX_SIZE) {
+        const ratio = MIN_VIEWBOX_SIZE / size;
+        newW *= ratio;
+        newH *= ratio;
+      } else if (size > MAX_VIEWBOX_SIZE) {
+        const ratio = MAX_VIEWBOX_SIZE / size;
+        newW *= ratio;
+        newH *= ratio;
+      }
 
-    // Recompute factor after clamping for precise alignment
-    const actualFactor = newW / viewBox.w;
+      viewBox.w = newW;
+      viewBox.h = newH;
 
-    viewBox.w = newW;
-    viewBox.h = newH;
+      viewBox.x = worldX - relX * viewBox.w;
+      viewBox.y = worldY - relY * viewBox.h;
 
-    // Keep the point under the cursor fixed
-    viewBox.x = worldX - relX * viewBox.w;
-    viewBox.y = worldY - relY * viewBox.h;
-
-    applyViewBox();
-  }, { passive: false });
+      applyViewBox();
+    },
+    { passive: false }
+  );
 }
 
 // ---------- PRESETS ----------
@@ -148,7 +143,6 @@ const builtInPresets = [
       repeatOffset: 40,
       repeatCount: 18,
       thickness: 2,
-      scale: 80,
       strokeColor: "#99ddff"
     }
   },
@@ -167,7 +161,6 @@ const builtInPresets = [
       repeatOffset: 120,
       repeatCount: 30,
       thickness: 3,
-      scale: 70,
       strokeColor: "#88ff88"
     }
   },
@@ -186,7 +179,6 @@ const builtInPresets = [
       repeatOffset: 220,
       repeatCount: 10,
       thickness: 1,
-      scale: 100,
       strokeColor: "#ff8888"
     }
   }
@@ -214,7 +206,7 @@ function updateLabel(id) {
 
 function syncInputsFromState() {
   const inputs = document.querySelectorAll('input[type="range"], input[type="color"]');
-  inputs.forEach(input => {
+  inputs.forEach((input) => {
     const id = input.id;
     const type = input.type;
     if (!state.hasOwnProperty(id)) return;
@@ -228,7 +220,7 @@ function syncInputsFromState() {
 
 function initControls() {
   const inputs = document.querySelectorAll('input[type="range"], input[type="color"]');
-  inputs.forEach(input => {
+  inputs.forEach((input) => {
     const id = input.id;
     const type = input.type;
 
@@ -330,7 +322,6 @@ function applyPreset(preset) {
   Object.assign(state, newState);
   syncInputsFromState();
 
-  // Reset viewBox when loading a preset so it recenters & resets zoom
   viewBox = { x: 0, y: 0, w: 640, h: 640 };
   applyViewBox();
 
@@ -401,13 +392,12 @@ function randomizeState() {
   state.repeatOffset = randomInt(0, 360);
   state.repeatCount = randomInt(5, 35);
 
-  state.thickness = randomInt(1, 4);
-  state.scale = randomInt(60, 120);
+  // thickness now bounded 1–3
+  state.thickness = randomInt(1, 3);
 
   const linePalette = ["#99ddff", "#ff8888", "#88ff88", "#ffc966", "#ddb3ff", "#66ffff"];
   state.strokeColor = randomChoice(linePalette);
 
-  // Reset viewBox when randomizing (center & reset zoom)
   viewBox = { x: 0, y: 0, w: 640, h: 640 };
   applyViewBox();
 }
@@ -422,7 +412,7 @@ function initRandomButton() {
   });
 }
 
-// ---------- DOWNLOAD (TIGHT BOUNDING BOX, TRANSPARENT BG) ----------
+// ---------- DOWNLOAD (TIGHT BBOX, NO BG) ----------
 
 function initDownloadButton() {
   const button = document.getElementById("downloadSvg");
@@ -479,7 +469,6 @@ function createPathData(stepIndex) {
 
   const { angleA, angleB, angleC, angleD } = state;
   const { scaleA, scaleB, scaleC, scaleD } = state;
-  const globalScale = state.scale / 100;
 
   const pts = [];
 
@@ -498,8 +487,8 @@ function createPathData(stepIndex) {
     const xxxx = xxx + Math.sin(degrees * rad * angleD) * (scaleD + repeatOffset);
     const yyyy = yyy + Math.cos(degrees * rad * angleD) * (scaleD + repeatOffset);
 
-    const sx = xxxx * globalScale;
-    const sy = yyyy * globalScale;
+    const sx = xxxx;
+    const sy = yyyy;
 
     pts.push(`${sx.toFixed(2)},${sy.toFixed(2)}`);
   }
@@ -508,7 +497,6 @@ function createPathData(stepIndex) {
 }
 
 function render() {
-  // Clear SVG (keep current viewBox for pan/zoom)
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
   const group = document.createElementNS(svgNS, "g");
