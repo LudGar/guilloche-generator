@@ -3,6 +3,15 @@
 A lightweight, browser-based guilloché (spirograph-style) pattern generator that renders interactive line art to SVG.  
 Built for exploration and precision: tweak parameters live, pan and zoom the preview, then export a clean, tightly-fitted SVG containing **only** the line work.
 
+## Inspiration & Acknowledgements
+
+This project was inspired by the excellent blog post:
+
+**Spirograph Guilloché Generator**  
+https://www.timestretch.com/2020/05/10/spirograph_guilloche_generator.html
+
+The article explores the mathematics and visual aesthetics behind guilloché-style patterns and served as the conceptual starting point for this interactive SVG-based implementation.
+
 ## Features
 
 - **Guilloché / spirograph-style curves** generated from layered trigonometric functions
