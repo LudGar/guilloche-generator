@@ -29,9 +29,7 @@ This project is a static HTML/CSS/JavaScript application. No build step is requi
 
 so
 python -m http.server 8080
-
-open via
-http://localhost:8080
+open via localhost
 
 
 Scales
@@ -50,14 +48,6 @@ No background
 
 Use a viewBox fitted to the drawing’s bounding box
 Width and height attributes are removed so the SVG scales cleanly in other applications.
-
-Project Structure
-text
-Copy code
-.
-├─ index.html     # UI layout and controls
-├─ style.css      # Styling and preview presentation
-└─ script.js      # Pattern generation, rendering, pan/zoom, presets, export
 
 Custom Presets
 Custom presets are stored locally in the browser using localStorage.
